@@ -1,10 +1,10 @@
 {
-  "name": "react-native-nordic-dfu",
-  "version": "3.3.0",
+  "name": "@circularing/react-native-nordic-dfu",
+  "version": "3.4.0",
   "description": "Nordic Device Firmware Update for React Native",
   "main": "index.js",
-  "url": "https://github.com/Pilloxa/react-native-nordic-dfu",
-  "repository": "Pilloxa/react-native-nordic-dfu",
+  "url": "https://github.com/circularing/react-native-nordic-dfu",
+  "repository": "circularing/react-native-nordic-dfu",
   "scripts": {
     "test": "echo \"No test specified\"",
     "precommit": "lint-staged",
@@ -15,7 +15,7 @@
     "dfu",
     "nordic"
   ],
-  "author": "Pilloxa <recruitment@pilloxa.com>",
+  "author": "Circular <teddy.fontaine@circular.xyz>",
   "license": "MIT",
   "peerDependencies": {
     "react": "*",

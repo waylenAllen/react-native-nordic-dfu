@@ -9,7 +9,7 @@ For more info about the DFU process, see: [Resources](#resources)
 
 - Please keep in mind the our availability to maintain this fork is limited and is based on our project needs.
 - If need the main documentation you can find it [here](https://github.com/Pilloxa/react-native-nordic-dfu).
-- This fork contains the latest verisons of `iOSDFULibrary` & `Android-BLE-Library`.
+- This fork contains the latest verisons of [`iOSDFULibrary`](https://github.com/NordicSemiconductor/IOS-DFU-Library) & [`Android-DFU-Library`](https://github.com/NordicSemiconductor/Android-DFU-Library).
 
 ### Installation
 
