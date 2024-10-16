@@ -1,4 +1,4 @@
-declare module "react-native-nordic-dfu" {
+declare module "@circularing/react-native-nordic-dfu" {
   export class NordicDFU {
     static startDFU({
       deviceAddress,

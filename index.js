@@ -29,7 +29,7 @@ function rejectPromise(message) {
  * @returns {Promise} A promise that resolves or rejects with the `deviceAddress` in the return value
  *
  * @example
- * import { NordicDFU, DFUEmitter } from "react-native-nordic-dfu";
+ * import { NordicDFU, DFUEmitter } from "@circularing/react-native-nordic-dfu";
  *
  * NordicDFU.startDFU({
  *   deviceAddress: "C3:53:C0:39:2F:99",
@@ -85,7 +85,7 @@ function startDFU({
  * @const DFUEmitter
  *
  * @example
- * import { NordicDFU, DFUEmitter } from "react-native-nordic-dfu";
+ * import { NordicDFU, DFUEmitter } from "@circularing/react-native-nordic-dfu";
  *
  * DFUEmitter.addlistener("DFUProgress",({percent, currentPart, partsTotal, avgSpeed, speed}) => {
  *   console.log("DFU progress: " + percent +"%");

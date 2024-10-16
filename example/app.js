@@ -15,7 +15,7 @@ import {
   View,
   Image
 } from "react-native";
-import { NordicDFU, DFUEmitter } from "react-native-nordic-dfu";
+import { NordicDFU, DFUEmitter } from "@circularing/react-native-nordic-dfu";
 import RNFetchBlob from "rn-fetch-blob";
 import BleManager from "react-native-ble-manager";
 
