@@ -208,9 +208,13 @@ RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
     } else {
       NSUUID * uuid = [[NSUUID alloc] initWithUUIDString:deviceAddress];
 
-      // Change for iOS 13
-      [NSThread sleepForTimeInterval: 1]; //Work around for not finding the peripheral in iOS 13
-      // End change for iOS 13
+      // iOS 13 workaround: Delay to allow the system to find the peripheral
+      if (@available(iOS 13.0, *)) {
+          NSString *systemVersion = [[UIDevice currentDevice] systemVersion];
+          if ([systemVersion hasPrefix:@"13."]) {
+              [NSThread sleepForTimeInterval:1];
+          }
+      }
       
       NSArray<CBPeripheral *> * peripherals = [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
 
@@ -243,16 +247,27 @@ RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
             initiator.packetReceiptNotificationParameter = packetReceiptNotificationParameter;
             initiator.alternativeAdvertisingNameEnabled = alternativeAdvertisingNameEnabled;
 
-            // Change for iOS 13
-            initiator.packetReceiptNotificationParameter = 1; //Rate limit the DFU using PRN.
-            [NSThread sleepForTimeInterval: 2]; //Work around for being stuck in iOS 13
-            // End change for iOS 13
+            // Apply iOS 13 workaround if necessary
+            if (@available(iOS 13.0, *)) {
+                NSString *systemVersion = [[UIDevice currentDevice] systemVersion];
+                if ([systemVersion hasPrefix:@"13."]) {
+                    // Optionally adjust packetReceiptNotificationParameter
+                    initiator.packetReceiptNotificationParameter = MIN(packetReceiptNotificationParameter, 1);
+
+                    // Start the DFU process after a delay to prevent being stuck
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                        DFUServiceController *controller = [initiator start];
+                        // Store controller if needed
+                    });
+                    return; // Return early since the DFU will start after the delay
+                }
+            }
 
             DFUServiceController * controller = [initiator start];
             
         } @catch (NSException *exception) {
             NSLog(@"Error creating DFUFirmware: %@", exception.reason);
-            // Handle the error appropriately
+            reject(@"dfu_firmware_creation_exception", exception.reason, nil);
         }
       }
     }
