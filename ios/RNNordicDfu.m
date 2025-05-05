@@ -1,12 +1,14 @@
 #import "RNNordicDfu.h"
 #import <CoreBluetooth/CoreBluetooth.h>
-#import <NordicDFU/NordicDFU-Swift.h>
+@import NordicDFU;
 
-static CBCentralManager * (^getCentralManager)();
 static void (^onDFUComplete)();
 static void (^onDFUError)();
 
 @interface RNNordicDfu () <DFUServiceDelegate, DFUProgressDelegate, CBPeripheralDelegate, CBCentralManagerDelegate>
+{
+  CBCentralManager *centralManager;
+}
 @property (nonatomic, strong) CBPeripheral *peripheral;
 @property (nonatomic, strong) CBCharacteristic *commandCharacteristic;
 @property (nonatomic, strong) CBCentralManager *centralManager;
@@ -230,72 +232,61 @@ RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
   self.resolve = resolve;
   self.reject = reject;
 
-  if (!getCentralManager) {
-    reject(@"nil_central_manager_getter", @"Attempted to start DFU without central manager getter", nil);
+  if (!centralManager)
+    centralManager = [[CBCentralManager alloc] initWithDelegate:nil queue:nil];
+
+  if (!deviceAddress) {
+    reject(@"nil_device_address", @"Attempted to start DFU with nil deviceAddress", nil);
+  } else if (!filePath) {
+    reject(@"nil_file_path", @"Attempted to start DFU with nil filePath", nil);
   } else {
-    CBCentralManager * centralManager = getCentralManager();
+    NSUUID * uuid = [[NSUUID alloc] initWithUUIDString:deviceAddress];
 
-    if (!centralManager) {
-      reject(@"nil_central_manager", @"Call to getCentralManager returned nil", nil);
-    } else if (!deviceAddress) {
-      reject(@"nil_device_address", @"Attempted to start DFU with nil deviceAddress", nil);
-    } else if (!filePath) {
-      reject(@"nil_file_path", @"Attempted to start DFU with nil filePath", nil);
+    // Wait for the peripheral to be discovered
+    [NSThread sleepForTimeInterval:1];
+
+    NSArray<CBPeripheral *> * peripherals = [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
+
+    if ([peripherals count] != 1) {
+      reject(@"unable_to_find_device", @"Could not find device with deviceAddress", nil);
     } else {
-      NSUUID * uuid = [[NSUUID alloc] initWithUUIDString:deviceAddress];
+      CBPeripheral * peripheral = [peripherals objectAtIndex:0];
 
-      // Wait for the peripheral to be discovered
-      [NSThread sleepForTimeInterval:1];
+      self.peripheral = peripheral;
 
-      NSArray<CBPeripheral *> * peripherals = [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
+      @try {
+        NSURL *url = [NSURL URLWithString:filePath];
+        DFUFirmware * firmware;
+        NSString * extension = [url pathExtension];
 
-      if ([peripherals count] != 1) {
-        reject(@"unable_to_find_device", @"Could not find device with deviceAddress", nil);
-      } else {
-        CBPeripheral * peripheral = [peripherals objectAtIndex:0];
-
-        self.peripheral = peripheral;
-        self.centralManager = centralManager;
-
-        @try {
-            NSURL *url = [NSURL URLWithString:filePath];
-            DFUFirmware * firmware;
-            NSString * extension = [url pathExtension];
-
-            if (([extension caseInsensitiveCompare:@"bin"] == NSOrderedSame) ||
-                  ([extension caseInsensitiveCompare:@"hex"] == NSOrderedSame)) {
-                firmware = [[DFUFirmware alloc] initWithUrlToBinOrHexFile:url urlToDatFile:nil type:4 error:nil];
-            } else {
-                firmware = [[DFUFirmware alloc] initWithUrlToZipFile:url error:nil];
-            }
-
-            DFUServiceInitiator * initiator = [[[DFUServiceInitiator alloc]
-                                                initWithCentralManager:centralManager
-                                                target:peripheral]
-                                               withFirmware:firmware];
-
-            initiator.logger = self;
-            initiator.delegate = self;
-            initiator.progressDelegate = self;
-            initiator.packetReceiptNotificationParameter = packetReceiptNotificationParameter;
-            initiator.alternativeAdvertisingNameEnabled = alternativeAdvertisingNameEnabled;
-
-            initiator.forceScanningForNewAddressInLegacyDfu = YES;
-
-            DFUServiceController *controller = [initiator start];
-
-        } @catch (NSException *exception) {
-            NSLog(@"Error creating DFUFirmware: %@", exception.reason);
-            reject(@"dfu_firmware_creation_exception", exception.reason, nil);
+        if (([extension caseInsensitiveCompare:@"bin"] == NSOrderedSame) ||
+              ([extension caseInsensitiveCompare:@"hex"] == NSOrderedSame)) {
+            firmware = [[DFUFirmware alloc] initWithUrlToBinOrHexFile:url urlToDatFile:nil type:4 error:nil];
+        } else {
+            firmware = [[DFUFirmware alloc] initWithUrlToZipFile:url error:nil];
         }
+
+        DFUServiceInitiator * initiator = [[[DFUServiceInitiator alloc]
+                                            initWithCentralManager:centralManager
+                                            target:peripheral]
+                                            withFirmware:firmware];
+
+        initiator.logger = self;
+        initiator.delegate = self;
+        initiator.progressDelegate = self;
+        initiator.packetReceiptNotificationParameter = packetReceiptNotificationParameter;
+        initiator.alternativeAdvertisingNameEnabled = alternativeAdvertisingNameEnabled;
+
+        initiator.forceScanningForNewAddressInLegacyDfu = YES;
+
+        DFUServiceController *controller = [initiator start];
+
+      } @catch (NSException *exception) {
+        NSLog(@"Error creating DFUFirmware: %@", exception.reason);
+        reject(@"dfu_firmware_creation_exception", exception.reason, nil);
       }
     }
   }
-}
-
-+ (void)setCentralManagerGetter:(CBCentralManager * (^)())getter
-{
-  getCentralManager = getter;
 }
 
 + (void)setOnDFUComplete:(void (^)())onComplete

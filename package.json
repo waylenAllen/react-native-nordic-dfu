@@ -1,10 +1,10 @@
 {
-  "name": "@circularing/react-native-nordic-dfu",
-  "version": "3.4.5",
+  "name": "@onebase/react-native-nordic-dfu",
+  "version": "1.0.0",
   "description": "Nordic Device Firmware Update for React Native",
   "main": "index.js",
-  "url": "https://github.com/circularing/react-native-nordic-dfu",
-  "repository": "circularing/react-native-nordic-dfu",
+  "url": "https://github.com/waylenAllen/react-native-nordic-dfu",
+  "repository": "waylenAllen/react-native-nordic-dfu",
   "scripts": {
     "test": "echo \"No test specified\"",
     "precommit": "lint-staged",
@@ -15,7 +15,7 @@
     "dfu",
     "nordic"
   ],
-  "author": "Circular <teddy.fontaine@circular.xyz>",
+  "author": "Tom Hao <tom@onebasehealth.com>",
   "license": "MIT",
   "peerDependencies": {
     "react": "*",
