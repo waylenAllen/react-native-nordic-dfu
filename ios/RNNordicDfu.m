@@ -6,6 +6,12 @@ static CBCentralManager * (^getCentralManager)();
 static void (^onDFUComplete)();
 static void (^onDFUError)();
 
+@interface RNNordicDfu () <DFUServiceDelegate, DFUProgressDelegate, CBPeripheralDelegate, CBCentralManagerDelegate>
+@property (nonatomic, strong) CBPeripheral *peripheral;
+@property (nonatomic, strong) CBCharacteristic *commandCharacteristic;
+@property (nonatomic, strong) CBCentralManager *centralManager;
+@end
+
 @implementation RNNordicDfu
 
 RCT_EXPORT_MODULE();
@@ -131,19 +137,26 @@ NSString * const DFUStateChangedEvent = @"DFUStateChanged";
 
 - (void)dfuStateDidChangeTo:(enum DFUState)state
 {
-  NSDictionary * evtBody = @{@"deviceAddress": self.deviceAddress,
-                             @"state": [self stateDescription:state],};
+    NSDictionary * evtBody = @{@"deviceAddress": self.deviceAddress,
+                               @"state": [self stateDescription:state],};
 
-  [self sendEventWithName:DFUStateChangedEvent body:evtBody];
+    [self sendEventWithName:DFUStateChangedEvent body:evtBody];
 
-  if (state == DFUStateCompleted) {
-    if (onDFUComplete) {
-      onDFUComplete();
+    if (state == DFUStateCompleted) {
+        NSLog(@"DFU complete");
+
+        // avoid flooding after the DFU is complete
+        [NSThread sleepForTimeInterval:10];
+
+        NSDictionary * resolveBody = @{@"deviceAddress": self.deviceAddress,};
+
+        if (self.resolve) {
+            self.resolve(resolveBody);
+        }
+        if (onDFUComplete) {
+            onDFUComplete();
+        }
     }
-    NSDictionary * resolveBody = @{@"deviceAddress": self.deviceAddress,};
-
-    self.resolve(resolveBody);
-  }
 }
 
 - (void)   dfuError:(enum DFUError)error
@@ -177,16 +190,39 @@ didOccurWithMessage:(NSString * _Nonnull)message
   [self sendEventWithName:DFUProgressEvent body:evtBody];
 }
 
-- (void)logWith:(enum LogLevel)level message:(NSString * _Nonnull)message
-{
-  NSLog(@"logWith: %ld message: '%@'", (long)level, message);
+- (void)logWith:(enum LogLevel)level message:(NSString * _Nonnull)message {
+    NSString *levelString;
+    switch (level) {
+        case LogLevelVerbose:
+            levelString = @"VERBOSE";
+            break;
+        case LogLevelDebug:
+            levelString = @"DEBUG";
+            break;
+        case LogLevelInfo:
+            levelString = @"INFO";
+            break;
+        case LogLevelApplication:
+            levelString = @"APP";
+            break;
+        case LogLevelWarning:
+            levelString = @"WARNING";
+            break;
+        case LogLevelError:
+            levelString = @"ERROR";
+            break;
+        default:
+            levelString = @"UNKNOWN";
+            break;
+    }
+    NSLog(@"[Nordic DFU][%@] %@", levelString, message);
 }
 
 RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
                   deviceName:(NSString *)deviceName
                   filePath:(NSString *)filePath
-                  packetReceiptNotificationParameter:(NSInteger *)packetReceiptNotificationParameter
-                  alternativeAdvertisingNameEnabled:(BOOL *)alternativeAdvertisingNameEnabled
+                  packetReceiptNotificationParameter:(NSInteger)packetReceiptNotificationParameter
+                  alternativeAdvertisingNameEnabled:(BOOL)alternativeAdvertisingNameEnabled
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
@@ -208,14 +244,9 @@ RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
     } else {
       NSUUID * uuid = [[NSUUID alloc] initWithUUIDString:deviceAddress];
 
-      // iOS 13 workaround: Delay to allow the system to find the peripheral
-      if (@available(iOS 13.0, *)) {
-          NSString *systemVersion = [[UIDevice currentDevice] systemVersion];
-          if ([systemVersion hasPrefix:@"13."]) {
-              [NSThread sleepForTimeInterval:1];
-          }
-      }
-      
+      // Wait for the peripheral to be discovered
+      [NSThread sleepForTimeInterval:1];
+
       NSArray<CBPeripheral *> * peripherals = [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
 
       if ([peripherals count] != 1) {
@@ -223,6 +254,8 @@ RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
       } else {
         CBPeripheral * peripheral = [peripherals objectAtIndex:0];
 
+        self.peripheral = peripheral;
+        self.centralManager = centralManager;
 
         @try {
             NSURL *url = [NSURL URLWithString:filePath];
@@ -247,24 +280,10 @@ RCT_EXPORT_METHOD(startDFU:(NSString *)deviceAddress
             initiator.packetReceiptNotificationParameter = packetReceiptNotificationParameter;
             initiator.alternativeAdvertisingNameEnabled = alternativeAdvertisingNameEnabled;
 
-            // Apply iOS 13 workaround if necessary
-            if (@available(iOS 13.0, *)) {
-                NSString *systemVersion = [[UIDevice currentDevice] systemVersion];
-                if ([systemVersion hasPrefix:@"13."]) {
-                    // Optionally adjust packetReceiptNotificationParameter
-                    initiator.packetReceiptNotificationParameter = MIN(packetReceiptNotificationParameter, 1);
+            initiator.forceScanningForNewAddressInLegacyDfu = YES;
 
-                    // Start the DFU process after a delay to prevent being stuck
-                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                        DFUServiceController *controller = [initiator start];
-                        // Store controller if needed
-                    });
-                    return; // Return early since the DFU will start after the delay
-                }
-            }
+            DFUServiceController *controller = [initiator start];
 
-            DFUServiceController * controller = [initiator start];
-            
         } @catch (NSException *exception) {
             NSLog(@"Error creating DFUFirmware: %@", exception.reason);
             reject(@"dfu_firmware_creation_exception", exception.reason, nil);

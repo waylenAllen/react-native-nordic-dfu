@@ -1,6 +1,6 @@
 {
   "name": "@circularing/react-native-nordic-dfu",
-  "version": "3.4.3",
+  "version": "3.4.5",
   "description": "Nordic Device Firmware Update for React Native",
   "main": "index.js",
   "url": "https://github.com/circularing/react-native-nordic-dfu",
