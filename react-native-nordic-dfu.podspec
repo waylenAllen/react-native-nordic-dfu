@@ -7,12 +7,12 @@ Pod::Spec.new do |s|
   s.version      = package['version']
   s.summary      = package['description']
 
-  s.authors      = { "Circular" => "teddy.fontaine@circular.xyz" }
-  s.homepage     = "https://github.com/circularing/react-native-nordic-dfu"
+  s.authors      = { "Tom Hao" => "tom@onebasehealth.com" }
+  s.homepage     = "https://github.com/waylenAllen/react-native-nordic-dfu"
   s.license      = "Apache License 2.0"
   s.platform     = :ios, "8.0"
 
-  s.source       = { :git => "https://github.com/circularing/react-native-nordic-dfu.git" }
+  s.source       = { :git => "https://github.com/waylenAllen/react-native-nordic-dfu.git" }
   s.source_files  = "ios/**/*.{h,m}"
 
   s.dependency "React-Core"
