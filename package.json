@@ -1,6 +1,6 @@
 {
   "name": "@onebase/react-native-nordic-dfu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Nordic Device Firmware Update for React Native",
   "main": "index.js",
   "url": "https://github.com/waylenAllen/react-native-nordic-dfu",
