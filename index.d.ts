@@ -7,7 +7,6 @@ declare module "@circularing/react-native-nordic-dfu" {
       alternativeAdvertisingNameEnabled,
       packetReceiptNotificationParameter,
       retries,
-      maxMtu,
     }: {
       deviceAddress: string;
       deviceName?: string;
@@ -15,7 +14,6 @@ declare module "@circularing/react-native-nordic-dfu" {
       alternativeAdvertisingNameEnabled?: boolean;
       packetReceiptNotificationParameter?: number;
       retries?: number;
-      maxMtu?: number;
     }): Promise<string>;
   }
 

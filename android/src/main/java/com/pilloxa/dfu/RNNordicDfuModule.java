@@ -41,10 +41,6 @@ public class RNNordicDfuModule extends ReactContextBaseJavaModule implements Lif
           starter.setNumberOfRetries(retries);
         }
 
-        if (options.hasKey("maxMtu")) {
-          int mtu = options.getInt("maxMtu");
-          starter.setMtu(mtu);
-        }
         if (name != null) {
             starter.setDeviceName(name);
         }

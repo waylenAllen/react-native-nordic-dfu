@@ -46,7 +46,6 @@ function startDFU({
   alternativeAdvertisingNameEnabled = true, //iOS only
   packetReceiptNotificationParameter = 12,
   retries = 3, // Android only
-  maxMtu = 23, // Android only
 }) {
   if (deviceAddress == undefined) {
     return rejectPromise("No deviceAddress defined");
@@ -71,7 +70,6 @@ function startDFU({
       packetReceiptNotificationParameter,
       {
         retries,
-        maxMtu,
       }
     );
   } else {
